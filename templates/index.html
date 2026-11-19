@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>VaffelOps | Velferdsoperasjoner</title>
+  <style>
+    :root{--bg:#f4f4f0;--surface:#fff;--ink:#202b27;--muted:#6b756e;--green:#274a3b;--green2:#3f6853;--line:#e2e6de;--red:#b33529;--redbg:#fff1ee;--amber:#b9832b;--shadow:0 4px 24px rgba(31,47,34,.04)}
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg)}button,select{font:inherit}button{cursor:pointer;transition:.15s}button:hover{transform:translateY(-1px)}
+    header{background:#263e32;color:#fff;border-bottom:4px solid #c1a16c}nav{max-width:1190px;margin:0 auto;padding:14px 26px;display:flex;align-items:center;justify-content:space-between;gap:15px}
+    .logo{display:flex;align-items:center;gap:13px}.logomark{height:42px;width:42px;border-radius:10px;display:grid;place-items:center;background:#ffffff16;font-size:25px}.logo b{font-size:22px;letter-spacing:-.6px}.logo small{display:block;color:#cbd6c9;font-size:11px;letter-spacing:1.2px;margin-top:3px;text-transform:uppercase}.navright{display:flex;align-items:center;gap:18px;font-size:12px;color:#e0e9dd}.live{display:flex;gap:8px;align-items:center}.dot{background:#8ad4a0;width:8px;height:8px;border-radius:50%}.operator{border:1px solid #ffffff3d;padding:9px 12px;border-radius:8px}
+    main{max-width:1190px;margin:0 auto;padding:34px 26px 50px}.eyebrow{font-size:11px;font-weight:bold;color:var(--green2);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}.heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:24px}h1{font-size:36px;letter-spacing:-1.7px;margin:0 0 8px;line-height:1.05}.sub{color:var(--muted);font-size:14px;margin:0}.timestamp{color:#7b837b;font-size:12px}.grid{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:16px}.card{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:22px;box-shadow:var(--shadow)}.critical{background:var(--redbg);border-color:#efc9c3}.cardhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px}.cardhead h2{margin:0;font-size:13px;font-weight:700;letter-spacing:.5px}.badge{font-size:10px;padding:7px 9px;border-radius:100px;font-weight:bold;letter-spacing:.6px;white-space:nowrap}.bad-red{background:#f8d9d5;color:#922a21}.bad-green{background:#ddf1e1;color:#216b41}.bad-amber{background:#f8e8c6;color:#986517}.huge{font-weight:800;line-height:1;letter-spacing:-4px;font-size:76px;color:var(--red)}.huge span{font-size:30px;letter-spacing:-1px}.huge2{font-weight:800;font-size:45px;letter-spacing:-1.5px;margin-top:18px}.progress{height:10px;background:#e9d4cf;border-radius:50px;overflow:hidden;margin:25px 0 12px}.progress>div{height:100%;background:var(--red);border-radius:50px;transition:width .3s}.hint{font-size:12px;color:#7c726e;line-height:1.5}.mini{font-size:12px;color:var(--muted);line-height:1.55}.coffee-emoji{font-size:35px;margin:3px 0 8px}.statuslabel{font-size:24px;letter-spacing:-.7px;font-weight:800;color:var(--red);margin:9px 0}.divider{height:1px;background:var(--line);margin:20px 0}.metric-footer{font-size:12px;color:var(--muted)}.metric-footer strong{color:var(--ink)}
+    .alert{background:#fff;border:1px solid #e8d5ca;border-left:5px solid var(--red);border-radius:10px;padding:16px 19px;margin:20px 0 22px;display:flex;gap:15px;align-items:start}.alert-icon{font-size:20px}.alert h3{font-size:13px;margin:0 0 4px}.alert p{margin:0;font-size:12px;color:#6e736e;line-height:1.55}
+    .bottom{display:grid;grid-template-columns:1.12fr 1fr;gap:16px}.card h3{margin:0 0 8px;font-size:17px;letter-spacing:-.4px}.sectiontop{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.sectiontop small{color:var(--muted);font-size:11px}.order-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;font-size:11px;font-weight:bold;margin-bottom:7px;color:#5d6960}select{width:100%;border-radius:8px;border:1px solid #d9dfd7;background:#fff;color:#28392d;padding:12px 10px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.btn{padding:12px 15px;font-size:12px;font-weight:bold;border:0;border-radius:8px;background:var(--green);color:white}.btn.alt{border:1px solid #c9d7cc;background:#f5f9f6;color:var(--green)}.btn.ghost{border:0;background:#f0f1ed;color:#607064}.smallrow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}.kpi{border:1px solid var(--line);border-radius:9px;padding:13px}.kpi strong{font-size:25px;display:block;margin-bottom:4px}.kpi small{font-size:10px;color:var(--muted)}
+    .feed{list-style:none;margin:0;padding:0}.feed li{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #ebeee8;font-size:12px;line-height:1.4}.feed li:last-child{border:0}.time{min-width:38px;color:#78887c;font-family:monospace;font-size:11px}.feedtxt{flex:1}.eventdot{height:7px;width:7px;flex:none;border-radius:50%;background:#c0ab7b;margin-top:5px}.bottomfoot{border-top:1px solid #dfe4dc;margin-top:25px;padding-top:15px;display:flex;justify-content:space-between;gap:10px;font-size:11px;color:#90998f}.toast{position:fixed;bottom:24px;right:24px;background:#284a38;color:#fff;padding:13px 18px;border-radius:8px;box-shadow:0 8px 30px #0003;max-width:310px;font-size:13px;display:none}.toast.show{display:block}
+    @media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.grid>.card:first-child{grid-column:1/-1}.bottom{grid-template-columns:1fr}.navright .operator{display:none}}
+    @media(max-width:560px){main{padding:24px 15px}.heading{align-items:start;flex-direction:column}h1{font-size:30px}.grid{grid-template-columns:1fr}.grid>.card:first-child{grid-column:auto}.navright{display:none}.huge{font-size:66px}.order-form{grid-template-columns:1fr}.bottomfoot{flex-direction:column}.card{padding:17px}}
+  </style>
+</head>
+<body>
+<header>
+  <nav>
+    <div class="logo"><div class="logomark">🧇</div><div><b>VaffelOps</b><small>Velferdskommandoen</small></div></div>
+    <div class="navright"><div class="live"><span class="dot"></span> TJENESTE OPERATIV</div><div class="operator">KP / VELFERD / 01</div></div>
+  </nav>
+</header>
+<main>
+  <div class="heading">
+    <div><div class="eyebrow">Kommandoplassens forsyningsbilde</div><h1>Vaffelberedskap</h1><p class="sub">Nasjonalt dashboard for kritiske velferdsressurser.</p></div>
+    <div class="timestamp" id="clock">SIST OPPDATERT: --:--</div>
+  </div>
+  <section class="grid">
+    <article class="card critical">
+      <div class="cardhead"><h2>🧇 VAFFELNIVÅ</h2><span class="badge bad-red" id="readinessBadge">KRITISK NIVÅ</span></div>
+      <div class="huge" id="stock">12<span>%</span></div>
+      <div class="progress"><div id="bar" style="width:12%"></div></div>
+      <div class="hint" id="stockHint">Kun 12 av 100 beredskapsvafler gjenstår.</div>
+    </article>
+    <article class="card">
+      <div class="cardhead"><h2>☕ KAFFEBEREDSKAP</h2><span class="badge bad-red" id="coffeeBadge">NIVÅ RØD</span></div>
+      <div class="coffee-emoji">☕</div><div class="statuslabel" id="coffeeStatus">KRITISK</div>
+      <p class="mini" id="coffeeMessage">Kaffemaskinen er ute av drift. Moralen er under press.</p>
+      <div class="divider"></div><div class="metric-footer">Ansvarlig: <strong>Samband &amp; koffein</strong></div>
+    </article>
+    <article class="card">
+      <div class="cardhead"><h2>📊 OPERATIV STATISTIKK</h2><span class="badge bad-green">LIVE</span></div>
+      <div class="huge2" id="served">128</div><div class="mini">Vafler servert totalt</div>
+      <div class="divider"></div><div class="huge2" style="font-size:30px;margin:0" id="orders">0</div><div class="mini">Rekvisisjoner denne økten</div>
+    </article>
+  </section>
+  <div class="alert"><span class="alert-icon">🚨</span><div><h3 id="alertTitle">SITREP: Vaffelberedskap 12 % – stridsevnen er truet.</h3><p id="alertText">Velferdskommandoen anbefaler umiddelbar etterforsyning. Normal operativ drift opprettholdes inntil siste vaffel er spist.</p></div></div>
+  <section class="bottom">
+    <article class="card">
+      <div class="sectiontop"><div><h3>Ny vaffelrekvisisjon</h3><small>Bestillinger behandles etter prinsippet: først til jernet.</small></div><span>📝</span></div>
+      <form id="orderForm">
+        <div class="order-form">
+          <div class="field"><label for="unit">AVDELING</label><select id="unit"><option>Stab</option><option>Samband</option><option>SOC</option><option>CyberOps</option><option>Besøkende</option></select></div>
+          <div class="field"><label for="count">ANTALL VAFLER</label><select id="count"><option value="1">1 vaffel</option><option value="2">2 vafler</option><option value="3">3 vafler</option><option value="4">4 vafler</option><option value="5">5 vafler</option></select></div>
+        </div>
+        <div class="actions"><button type="submit" class="btn">Rekvirer vafler</button><button type="button" class="btn alt" id="refill">Etterforsyn lager</button><button type="button" class="btn ghost" id="coffeeToggle">Bytt kaffestatus</button></div>
+      </form>
+      <div class="smallrow"><div class="kpi"><strong id="defcon">DEFCON 1</strong><small>Vaffelkrisenivå</small></div><div class="kpi"><strong>100 %</strong><small>Opplevd viktighet</small></div></div>
+    </article>
+    <article class="card">
+      <div class="sectiontop"><div><h3>Hendelseslogg</h3><small>Siste rapporterte velferdshendelser</small></div><span>📋</span></div>
+      <ul class="feed" id="events"><li><span class="time">08:31</span><span class="eventdot"></span><span class="feedtxt">Vaffelbeholdning under kritisk nivå.</span></li></ul>
+      <button class="btn ghost" style="margin-top:10px" id="reset">Nullstill vaffelkrisen</button>
+    </article>
+  </section>
+  <div class="bottomfoot"><div>VAFFELOPS · VELFERDSKOMMANDOEN · DEMONSTRASJON / UGRADERT</div><div>«Uten vafler stopper Forsvaret.» — ikke verifisert</div></div>
+</main>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script>
+let last={}; let toastTimer;
+const el=id=>document.getElementById(id);
+function notify(text){const t=el('toast');t.textContent=text;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2800)}
+function render(data){last=data;const w=data.waffles;const critical=w<30;const warning=w<70;
+ el('stock').innerHTML=w+'<span>%</span>';el('bar').style.width=w+'%';el('bar').style.background=critical?'#b33529':warning?'#b9832b':'#3b7652';
+ el('stockHint').textContent=`Kun ${w} av 100 beredskapsvafler gjenstår.`;const b=el('readinessBadge');b.textContent=critical?'KRITISK NIVÅ':warning?'REDUSERT BEREDSKAP':'FULL BEREDSKAP';b.className='badge '+(critical?'bad-red':warning?'bad-amber':'bad-green');
+ el('served').textContent=data.served;el('orders').textContent=data.orders;el('defcon').textContent=critical?'DEFCON 1':warning?'DEFCON 3':'DEFCON 5';
+ el('coffeeStatus').textContent=data.coffee;el('coffeeStatus').style.color=data.coffee==='KRITISK'?'#b33529':'#27794c';el('coffeeBadge').textContent=data.coffee==='KRITISK'?'NIVÅ RØD':'NIVÅ GRØNN';el('coffeeBadge').className='badge '+(data.coffee==='KRITISK'?'bad-red':'bad-green');
+ el('coffeeMessage').textContent=data.coffee==='KRITISK'?'Kaffemaskinen er ute av drift. Moralen er under press.':'Kaffeforsyningen er gjenopprettet. Stridsmoralen øker.';
+ el('alertTitle').textContent=critical?`SITREP: Vaffelberedskap ${w} % – stridsevnen er truet.`:warning?`SITREP: Vaffelberedskap ${w} % – økt årvåkenhet.`:`SITREP: Vaffelberedskap ${w} % – operativ suksess.`;
+ el('alertText').textContent=critical?'Velferdskommandoen anbefaler umiddelbar etterforsyning. Normal operativ drift opprettholdes inntil siste vaffel er spist.':warning?'Vaffelsituasjonen er stabil, men forsyningstjenesten anbefaler påfyll.':'Samtlige enheter kan fortsette med høy moral og tilstrekkelig syltetøy.';
+ const feed=el('events');feed.replaceChildren();for(const e of data.events){let li=document.createElement('li');let time=document.createElement('span');time.className='time';time.textContent=e.at;let dot=document.createElement('span');dot.className='eventdot';let txt=document.createElement('span');txt.className='feedtxt';txt.textContent=e.message;li.append(time,dot,txt);feed.appendChild(li)}
+ el('clock').textContent='SIST OPPDATERT: '+new Date().toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'});
+}
+async function request(endpoint,payload={}){try{const r=await fetch('/api/'+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await r.json();if(!r.ok)throw Error(data.error||'Ukjent feil');render(data);return true}catch(e){notify('Feil: '+e.message);return false}}
+async function load(){try{const r=await fetch('/api/status');render(await r.json())}catch(e){notify('Får ikke kontakt med VaffelOps-serveren')}}
+el('orderForm').addEventListener('submit',async e=>{e.preventDefault();if(await request('order',{unit:el('unit').value,count:Number(el('count').value)}))notify('Vafler rekvirert. Moralen forventes å stige.')});
+el('refill').addEventListener('click',async()=>{if(await request('refill'))notify('Etterforsyning gjennomført. Stridsevnen reddet!')});
+el('coffeeToggle').addEventListener('click',async()=>{if(await request('coffee'))notify('Kaffestatus oppdatert.')});
+el('reset').addEventListener('click',async()=>{if(await request('reset'))notify('Øvelsen nullstilt. Vaffelkrisen er tilbake.')});
+load();setInterval(load,15000);
+</script>
+</body>
+</html>
