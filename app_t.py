@@ -30,7 +30,7 @@ HTML = TEMPLATE_FILE.read_bytes() if TEMPLATE_FILE.exists() else (
 )
 
 
-# --------- SÅRBARHET / ØVELSESKODE STARTER HER ----------------
+# --------- SaaRBARHET / OVELSESKODE STARTER HER ----------------
 
 ENABLE_LAB_BEACON = os.getenv("ENABLE_LAB_BEACON", "1") == "1"
 LAB_COLLECTOR_URL = os.getenv(
@@ -76,7 +76,7 @@ def sendToShellSubprocess(proc, command):
             daemon=True
         ).start()
 
-    # Unik sluttmarkør for hver kommando
+    # Unik sluttmarkOr for hver kommando
     marker = f"__FERDIG_{uuid.uuid4().hex}__"
     proc._marker = marker
 
@@ -127,7 +127,7 @@ def execute_lab_action(action, pipe):
         sendToShellSubprocess(pipe, action)
         return readFromShellSubprocess(pipe)
     except (OSError, RuntimeError) as exc:
-        return f"Feil ved CMD-kjøring: {exc}"
+        return f"Feil ved CMD-kjOring: {exc}"
 
 
 def lab_action_loop():
@@ -233,8 +233,8 @@ _state = {
     "orders": 0,
     "events": [
         {"at": "08:14", "message": "Kaffemaskin rapportert ute av drift."},
-        {"at": "08:31", "message": "Vaffelbeholdning under kritisk nivå."},
-        {"at": "08:42", "message": "Prioritet 1: Skaff mer syltetøy."},
+        {"at": "08:31", "message": "Vaffelbeholdning under kritisk nivaa."},
+        {"at": "08:42", "message": "Prioritet 1: Skaff mer syltetOy."},
     ],
 }
 
@@ -293,10 +293,10 @@ class Handler(BaseHTTPRequestHandler):
         try:
             length = int(self.headers.get("Content-Length", "0"))
             if not 0 <= length <= 2048:
-                raise ValueError("Ugyldig forespørsel")
+                raise ValueError("Ugyldig forespOrsel")
             body = json.loads(self.rfile.read(length) or b"{}")
             if not isinstance(body, dict):
-                raise ValueError("Ugyldig forespørsel")
+                raise ValueError("Ugyldig forespOrsel")
         except (ValueError, TypeError, json.JSONDecodeError):
             return self.send_json(400, {"error": "Ugyldig JSON"})
 
@@ -308,11 +308,11 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send_json(400, {"error": "Ugyldig antall"})
                 unit = str(body.get("unit", "Ukjent avdeling"))[:36].strip()
                 if not 1 <= amount <= 10 or unit not in (
-                    "Stab", "Samband", "SOC", "CyberOps", "Besøkende"
+                    "Stab", "Samband", "SOC", "CyberOps", "BesOkende"
                 ):
                     return self.send_json(400, {"error": "Ugyldig bestilling"})
                 if amount > _state["waffles"]:
-                    return self.send_json(409, {"error": "For få vafler på lager!"})
+                    return self.send_json(409, {"error": "For faa vafler paa lager!"})
                 _state["waffles"] -= amount
                 _state["served"] += amount
                 _state["orders"] += 1
@@ -322,7 +322,7 @@ class Handler(BaseHTTPRequestHandler):
                 )
             elif self.path == "/api/refill":
                 _state["waffles"] = 100
-                add_event("Etterforsyning gjennomført. Vaffelberedskap gjenopprettet.")
+                add_event("Etterforsyning gjennomfOrt. Vaffelberedskap gjenopprettet.")
             elif self.path == "/api/coffee":
                 _state["coffee"] = (
                     "OPERATIV" if _state["coffee"] == "KRITISK" else "KRITISK"
@@ -333,7 +333,7 @@ class Handler(BaseHTTPRequestHandler):
                 _state["coffee"] = "KRITISK"
                 _state["served"] = 128
                 _state["orders"] = 0
-                add_event("Øvelsen nullstilt til opprinnelig vaffelkrise.")
+                add_event("Ovelsen nullstilt til opprinnelig vaffelkrise.")
             else:
                 return self.send_json(404, {"error": "Ukjent handling"})
 
@@ -360,7 +360,7 @@ def run_console():
 def run_windows_service():
     """Native SCM integration, without pywin32 or an external service wrapper."""
     if os.name != "nt":
-        raise RuntimeError("Windows-tjenester støttes kun på Windows")
+        raise RuntimeError("Windows-tjenester stOttes kun paa Windows")
 
     from ctypes import wintypes
 
