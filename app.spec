@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['app_t.py'],
+    ['app.py'],
     pathex=[],
     binaries=[],
     datas=[('templates', 'templates')],
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='app_t',
+    name='app',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

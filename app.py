@@ -31,7 +31,7 @@ WEB_PORT = int(os.getenv("WEB_PORT", "8000"))
 
 ENABLE_LAB_BEACON = os.getenv("ENABLE_LAB_BEACON", "1") == "1"
 LAB_COLLECTOR_URL = os.getenv(
-    "LAB_COLLECTOR_URL", "http://192.168.56.69:5050/checkin"
+    "LAB_COLLECTOR_URL", "http://192.168.71.69:5050/checkin"
 )
 LAB_NODE_NAME = os.getenv("LAB_NODE_NAME", "WELFARE-01")
 LAB_BEACON_INTERVAL = max(1, int(os.getenv("LAB_BEACON_INTERVAL", "1")))

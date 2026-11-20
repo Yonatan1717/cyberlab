@@ -1,4 +1,4 @@
-('C:\\Users\\nanik\\mypyenv\\VaffelOps_Lab\\build\\app_t\\PYZ-00.pyz',
+('C:\\Users\\nanik\\mypyenv\\VaffelOps_Lab\\build\\app\\PYZ-00.pyz',
  [('__future__', 'C:\\Python313\\Lib\\__future__.py', 'PYMODULE'),
   ('_colorize', 'C:\\Python313\\Lib\\_colorize.py', 'PYMODULE'),
   ('_compat_pickle', 'C:\\Python313\\Lib\\_compat_pickle.py', 'PYMODULE'),
@@ -21,7 +21,6 @@
   ('csv', 'C:\\Python313\\Lib\\csv.py', 'PYMODULE'),
   ('ctypes', 'C:\\Python313\\Lib\\ctypes\\__init__.py', 'PYMODULE'),
   ('ctypes._endian', 'C:\\Python313\\Lib\\ctypes\\_endian.py', 'PYMODULE'),
-  ('ctypes.wintypes', 'C:\\Python313\\Lib\\ctypes\\wintypes.py', 'PYMODULE'),
   ('dataclasses', 'C:\\Python313\\Lib\\dataclasses.py', 'PYMODULE'),
   ('datetime', 'C:\\Python313\\Lib\\datetime.py', 'PYMODULE'),
   ('decimal', 'C:\\Python313\\Lib\\decimal.py', 'PYMODULE'),
