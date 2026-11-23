@@ -44,11 +44,24 @@ if ($null -eq $handle -or $handle.IsInvalid) {
 try {
     $fs = New-Object System.IO.FileStream($handle, [System.IO.FileAccess]::ReadWrite)
     
-    # 5. Skriv nuller til MBR (første 512 bytes)
+    # 5. Skriv nuller til disken, i biter (unngår å allokere én kjempestor buffer)
     $fs.Seek(0, [System.IO.SeekOrigin]::Begin) | Out-Null
-    $zeroBuffer = New-Object byte[] 512
-    $fs.Write($zeroBuffer, 0, $zeroBuffer.Length)
-    $fs.Flush()
+    $chunkSize  = 512
+    $totalBytes = [int64]512 * 1000000
+    $zeroBuffer = New-Object byte[] $chunkSize
+    $written = 0L
+    try {
+        while ($written -lt $totalBytes) {
+            $toWrite = [Math]::Min($chunkSize, $totalBytes - $written)
+            $fs.Write($zeroBuffer, 0, $toWrite)
+            $written += $toWrite
+        }
+        $fs.Flush()
+    }
+    catch {
+        $sektor = $written / 512
+        throw
+    }
 }
 finally {
     if ($fs) { $fs.Close() }
