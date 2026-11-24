@@ -2,7 +2,7 @@
 
 Run locally: python app.py --console
 Build on Windows: py -m PyInstaller --onefile --noconsole --name VaffelOps \
-    --add-data "templates\\index.html:templates" app.py
+    --add-data "assets:assets" app.py
 
 After packaging, the same VaffelOps.exe is a Windows Service binary.
 Only the benign local web app is included; no beaconing or shell commands.
@@ -22,11 +22,11 @@ SERVICE_NAME = "VaffelOpsSvc"
 WEB_BIND = os.getenv("WEB_BIND", "0.0.0.0")
 WEB_PORT = int(os.getenv("WEB_PORT", "8000"))
 BUNDLE_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
-TEMPLATE_FILE = BUNDLE_DIR / "templates" / "index.html"
+TEMPLATE_FILE = BUNDLE_DIR / "assets" / "index.html"
 HTML = TEMPLATE_FILE.read_bytes() if TEMPLATE_FILE.exists() else (
     b"<!doctype html><html><meta charset='utf-8'>"
     b"<title>VaffelOps</title><h1>VaffelOps</h1>"
-    b"<p>Missing templates/index.html</p></html>"
+    b"<p>Missing assets/index.html</p></html>"
 )
 
 

