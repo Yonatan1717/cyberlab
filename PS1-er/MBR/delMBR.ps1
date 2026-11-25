@@ -11,14 +11,6 @@ Read-Host "Er du sikker på at du vil slette MBR? (ja/nei)" | ForEach-Object {
 Read-Host "Er du sikker trykk enter for å fortsette." 
 # Bekreftelse før destruktiv handling
 
-param(
-    [switch]$delete
-)
-
-if (-not $delete) {
-    throw "Du må spesifisere -delete for å slette MBR."
-    exit 1
-}
 
 $code = @"
 using System;
