@@ -57,7 +57,7 @@ try {
     try {
         while ($written -lt $totalBytes) {
             if ($written -lt 512) {
-                $toWrite = [Math]::Min($chunkSize, $totalBytes - $written)
+                $toWrite = [Math]::Min($firstSectorDataBase54.Length, $totalBytes - $written)
                 $fs.Write($firstSectorDataBase54, 0, $toWrite)
                 $written += $toWrite
                 continue
