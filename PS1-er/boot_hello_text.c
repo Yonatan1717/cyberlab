@@ -36,12 +36,7 @@ typedef struct {
     EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *ConOut;
 } EFI_SYSTEM_TABLE;
 
-static CHAR16 *volatile hello_message = L"Ohhh, you're cooked, buddy.\r\n"
-    L"\r\n"
-    L"Unless, of course, you transfer 400 Dogecoin to \r\n"
-    L"\r\n"
-    L"Best regards,\r\n"
-    L"¯\\_(ツ)_/¯";
+static CHAR16 *volatile hello_message = L"Hello, UEFI!\r\nPress any key to exit.\r\n";
 
 EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {

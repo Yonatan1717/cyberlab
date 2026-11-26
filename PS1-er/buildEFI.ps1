@@ -1,14 +1,25 @@
+param(
+    $SourceFile = "boot_hello_text.c"
+)
+
 clang --target=x86_64-pc-windows-msvc `
     -ffreestanding `
     -fshort-wchar `
     -fno-stack-protector `
     -O2 `
-    -c boot_hello_text.c `
-    -o boot_hello_text.obj
+    -c $SourceFile `
+    -o ($SourceFile -replace '\.c$', '.obj')
 
 if ($LASTEXITCODE -ne 0) {
     throw "Compilation failed"
 }
+
+$efiObj = $SourceFile -replace '\.c$', '.obj'
+$efiOut = $SourceFile -replace '\.c$', '.efi'
+
+Write-Host "EFI object -> $efiObj"
+write-host "EFI output -> $efiOut"
+Write-Host "Building $SourceFile into $efiOut..." -ForegroundColor Cyan
 
 lld-link /subsystem:efi_application `
     /entry:efi_main `
@@ -16,13 +27,13 @@ lld-link /subsystem:efi_application `
     /machine:x64 `
     /dynamicbase `
     /fixed:no `
-    /out:boot_hello_text.efi `
-    boot_hello_text.obj
+    /out:$efiOut `
+    $efiObj
 
 if ($LASTEXITCODE -ne 0) {
     throw "Linking failed"
 }
 
-Remove-Item boot_hello_text.obj
+Remove-Item $efiObj
 
-Write-Host "EFI build successful!" -ForegroundColor Green
+Write-Host "$SourceFile built successfully as $efiOut!" -ForegroundColor Green
