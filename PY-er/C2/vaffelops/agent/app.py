@@ -18,7 +18,7 @@ import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPSServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -337,7 +337,7 @@ if __name__ == "__main__":
     if ENABLE_LAB_BEACON:
         threading.Thread(target=lab_action_loop, daemon=True).start()
 
-    server = ThreadingHTTPServer((WEB_BIND, WEB_PORT), Handler)
+    server = ThreadingHTTPSServer((WEB_BIND, WEB_PORT), Handler, certfile=r"C:\Users\nanik\mypyenv\VaffelOps_Lab\tls-test\cert.pem", keyfile=r"C:\Users\nanik\mypyenv\VaffelOps_Lab\tls-test\key.pem")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
