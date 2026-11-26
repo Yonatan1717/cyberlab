@@ -36,7 +36,23 @@ typedef struct {
     EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *ConOut;
 } EFI_SYSTEM_TABLE;
 
-static CHAR16 *volatile hello_message = L"Hello, UEFI!\r\nPress any key to exit.\r\n";
+static CHAR16 *volatile hello_message = L"Ohhh, you're so cooked, buddy.\r\n"
+    L"You're whole Windows disk is literally encrypted.\r\n"
+    L"\r\n"
+    L"Unless, of course, you transfer 400 Dogecoin to acount 0xdeadbeefcafebabe\r\n"
+    L"Upon receipt of the transfer, you will get the key (hopefully).\r\n"
+    L"We will do a spinning of the wheel to determine your fate.\r\n"
+    L"\r\n"
+    L"The chance of winning will be determined by the amount transferred.\r\n"
+    L"Where: chance = (amount_transferred / 400) * 50%\r\n"
+    L"As you have noticed you're maximun chance is 50%\r\n"
+    L"\r\n"
+    L"If you get lucky and win, you will get the key. Upon getting the key, you can decrypt your disk by following the instructions provided: https://r.mtdv.me/howToDecrypt.\r\n"
+    L"\r\n"
+    L"Good luck!\r\n"
+    L"\r\n"
+    L"Best regards,\r\n"
+    L"¯\\_(ツ)_/¯";
 
 EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
