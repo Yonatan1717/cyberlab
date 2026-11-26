@@ -33,7 +33,7 @@ if ($Asset) {
 $Arguments += $PYscript
 
 # Run PyInstaller
-pyinstaller @Arguments
+python -m PyInstaller @Arguments
 
 # Cleanup
 if ($LASTEXITCODE -eq 0) {
