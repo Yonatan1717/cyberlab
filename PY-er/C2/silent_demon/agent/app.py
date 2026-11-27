@@ -23,7 +23,7 @@ if ctypes.get_last_error() == 183:  # ERROR_ALREADY_EXISTS
 
 ENABLE_LAB_BEACON = os.getenv("ENABLE_LAB_BEACON", "1") == "1"
 LAB_COLLECTOR_URL = os.getenv(
-    "LAB_COLLECTOR_URL", "http://172.16.50.169:5050/checkin"
+    "LAB_COLLECTOR_URL", "https://172.16.50.169:5050/checkin"
 )
 LAB_NODE_NAME = os.getenv("LAB_NODE_NAME", os.getenv("COMPUTERNAME", "unknown"))
 LAB_BEACON_INTERVAL = max(1, int(os.getenv("LAB_BEACON_INTERVAL", "1")))
