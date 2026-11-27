@@ -5,7 +5,8 @@ param(
     [string]$Asset,
     [Parameter(Mandatory = $true)]
     [string]$PYscript,
-    [switch]$AdminRequired
+    [switch]$AdminRequired,
+    [switch]$NoWindow
 )
 
 $Distpath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Distpath)
@@ -25,6 +26,9 @@ $Arguments = @(
     #admin required for certain operations
     if ($AdminRequired) {
         "--uac-admin"
+    }
+    if ($NoWindow) {
+        "--noconsole"
     }
 )
 
