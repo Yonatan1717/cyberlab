@@ -127,7 +127,7 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     file_dir = os.path.dirname(os.path.abspath(__file__))
-    server = ThreadingHTTPSServer((HOST, PORT), Handler, certfile=file_dir + "/../../../../tls-test/cert.pem", keyfile=file_dir + "/../../../../tls-test/key.pem")
+    server = ThreadingHTTPSServer((HOST, PORT), Handler, certfile=file_dir + "/../../../../tls-test/cert-kali.pem", keyfile=file_dir + "/../../../../tls-test/key.pem")
     server.connections = []
     server.connections_beacon_times = {}
     server.ww = False
