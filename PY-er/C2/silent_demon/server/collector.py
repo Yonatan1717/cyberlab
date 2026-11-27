@@ -127,8 +127,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    executable_dir = os.path.dirname(sys.executable)
-    server = ThreadingHTTPSServer((HOST, PORT), Handler, certfile=executable_dir + "/../../../../tls-test/cert.pem", keyfile=executable_dir + "/../../../../tls-test/key.pem")
+    file_dir = os.path.dirname(os.path.abspath(__file__))
+    server = ThreadingHTTPSServer((HOST, PORT), Handler, certfile=file_dir + "/../../../../tls-test/cert.pem", keyfile=file_dir + "/../../../../tls-test/key.pem")
     server.connections = []
     server.connections_beacon_times = {}
     server.ww = False
