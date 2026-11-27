@@ -8,6 +8,7 @@ import base64
 import json
 import os
 import queue
+import sys
 import threading
 import uuid
 from datetime import datetime, timezone
@@ -126,7 +127,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    server = ThreadingHTTPSServer((HOST, PORT), Handler, certfile="../../../../tls-test/cert.pem", keyfile="../../../../tls-test/key.pem")
+    executable_dir = os.path.dirname(sys.executable)
+    server = ThreadingHTTPSServer((HOST, PORT), Handler, certfile=executable_dir + "/../../../../tls-test/cert.pem", keyfile=executable_dir + "/../../../../tls-test/key.pem")
     server.connections = []
     server.connections_beacon_times = {}
     server.ww = False
