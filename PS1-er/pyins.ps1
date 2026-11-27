@@ -4,7 +4,8 @@ param(
     [string]$Distpath = ".",
     [string]$Asset,
     [Parameter(Mandatory = $true)]
-    [string]$PYscript
+    [string]$PYscript,
+    [switch]$AdminRequired
 )
 
 $Distpath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Distpath)
@@ -21,6 +22,10 @@ $Arguments = @(
     "$TempBuild\build"
     "--specpath"
     $TempBuild
+    #admin required for certain operations
+    if ($AdminRequired) {
+        "--uac-admin"
+    }
 )
 
 if ($Asset) {
