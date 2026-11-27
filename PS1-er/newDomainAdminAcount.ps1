@@ -10,11 +10,15 @@ if ($plain -cne $plainConfirm) {
 $domain = Read-Host "Enter the domain for the new user" # ekse corp.nvidia.test
 $domainParts = $domain -split '\.'
 $domainDN = ($domainParts | ForEach-Object { "DC=$_" }) -join ','
-Write-Host "Domain DN: $domainDN"
-exit 0
 
 import-module ActiveDirectory
-
 New-ADUser -Name $username -SamAccountName $username -AccountPassword $password -Enabled $true -PasswordNeverExpires $true -ChangePasswordAtLogon $false -Path "CN=Users,$domainDN"
-
 Add-ADGroupMember -Identity "Domain Admins" -Members $username
+
+<#
+----- manually create a new domain admin account for testing purposes -----
+
+New-ADUser -Name "nvidia.consultant" -SamAccountName "nvidia.consultant" -AccountPassword (ConvertTo-SecureString "mamma" -AsPlainText -Force) -Enabled $true -PasswordNeverExpires $true -ChangePasswordAtLogon $false -Path "CN=Users,DC=corp,DC=nvidia,DC=test"
+Add-ADGroupMember -Identity "Domain Admins" -Members "nvidia.consultant"
+#>
+

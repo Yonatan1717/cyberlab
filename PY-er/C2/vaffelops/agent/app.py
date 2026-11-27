@@ -12,13 +12,14 @@ Den leser kun egne øvingsfiler og støtter kun forhåndsdefinerte, ufarlige lab
 import base64
 import json
 import os
+import ssl
 import subprocess
 import threading
 import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPSServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPSServer, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -30,7 +31,7 @@ WEB_PORT = int(os.getenv("WEB_PORT", "8000"))
 
 ENABLE_LAB_BEACON = os.getenv("ENABLE_LAB_BEACON", "1") == "1"
 LAB_COLLECTOR_URL = os.getenv(
-    "LAB_COLLECTOR_URL", "http://192.168.71.69:5050/checkin"
+    "LAB_COLLECTOR_URL", "https://localhost:5050/checkin"
 )
 LAB_NODE_NAME = os.getenv("LAB_NODE_NAME", "WELFARE-01")
 LAB_BEACON_INTERVAL = max(1, int(os.getenv("LAB_BEACON_INTERVAL", "1")))
@@ -47,6 +48,9 @@ import urllib.request
 import urllib.error
 
 from datetime import datetime, timezone
+
+
+cert_base64 = "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDQpNSUlESlRDQ0FnMmdBd0lCQWdJVVE0UUdGQkFqTzlBV3RWdUprVjJQWDV4SENsNHdEUVlKS29aSWh2Y05BUUVMDQpCUUF3RkRFU01CQUdBMVVFQXd3SmJHOWpZV3hvYjNOME1CNFhEVEkyTVRFeU5qQTRNREV4TWxvWERUSTNNVEV5DQpOakE0TURFeE1sb3dGREVTTUJBR0ExVUVBd3dKYkc5allXeG9iM04wTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGDQpBQU9DQVE4QU1JSUJDZ0tDQVFFQXNHaUhrRTk0MlVnQjdmYkRaT0FTS3FaanFiL3M1aTJ5azNmL2tnOHA1UHR6DQpjZ2NZN2gxZEgwK1g3QXFzOVFXSXZIZ29yTnpud01VbHF0d0FoZHZDb2dTUm4yVXJTRDNHZHFDTEQvL1hrVW92DQpiRk9neGVxbU9WOElRVWFhTkY1ejgzT1B6cVpCalBnTllBNGtCejE4Mzg2WjduQVNoQzNmUkNiTldLVXBlLzFEDQpheWF0RzBJODQxNWFwcmc2cUs1WTI3WWRmMlpGcTZIUGIwMi9IMzNLMEZwc1UyT3IvbkRVaDhlUlpqWWErdjljDQorYml0d3oyUUoxQ05ZRExCU2pIWVpiVU83M0Y5R2s5eTZRN3BBVE9ET0VBaGk0T1VrRkhoTjVwLzVhS3RRM3F0DQprQlN6ZldJZXVvNVVJdDBTV0RjQlJ1T1pZa0txdnZLSHBTYzd2anJCd3dJREFRQUJvMjh3YlRBZEJnTlZIUTRFDQpGZ1FVbDA1V3FPYXlDQVcrM0ExWTRQZ2cxcFFkMjZ3d0h3WURWUjBqQkJnd0ZvQVVsMDVXcU9heUNBVyszQTFZDQo0UGdnMXBRZDI2d3dEd1lEVlIwVEFRSC9CQVV3QXdFQi96QWFCZ05WSFJFRUV6QVJnZ2xzYjJOaGJHaHZjM1NIDQpCSDhBQUFFd0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFBMzVnejJEOEZhazlOeERLcGt5azI0elY0a2F4a1JKDQpuemxrWjhIdUEraFZxaWlQUmxmTUdRNS9hYktnRjNTZ2N2Ym5qeWZJNkkybkNHemNpNUpNWlA5ZEdZQWJBQmhRDQpUak90OXo4eUtXdS81bUp6MktGVUtYem1NYkFpUWlvRVNRT2ZUWTByd1VYQk5rdjJRR3Q1UFh0WTNiT2FYM051DQo4S2xUU0lWWHlFZFgxTmR2MC8xRHVLdjA5TisrZm5rb0wvczFJK200R0RzVG5KRndwdnBwWUM1SktpS09KNE5vDQpocHgySUJuWElldzNLWHBESzd2TVdpZTQ1UE1ldEY0alcybGVwZFVKRVdxUlRpNkRXeHFLTzY4ekFjTnJRdndUDQpNTkVHUmVxYXpQcTAzR2FlcGMrc0FoMHhLWG1LVjVsWFhOSUhadUtmSzZKdUxuTVB4SitpMlNVPQ0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQ0K"
 
 
 # Tillatte kommandoer fra collector
@@ -165,7 +169,12 @@ def lab_action_loop():
                 ).isoformat(),  
                 "last_result": base64.b64encode(json.dumps(pending_result).encode("utf-8")).decode("utf-8") if pending_result else None,
             }
+            
 
+            cert_data = base64.b64decode(cert_base64).decode("utf-8")
+            ssl_context = ssl.create_default_context(cadata=cert_data)
+
+            # 2. Bygg selve forespørselen (uten context)
             request = urllib.request.Request(
                 LAB_COLLECTOR_URL,
                 data=json.dumps(payload).encode("utf-8"),
@@ -178,7 +187,7 @@ def lab_action_loop():
 
             try:
                 with urllib.request.urlopen(
-                    request, timeout=5
+                    request, timeout=5, context=ssl_context
                 ) as reply:
                     response = json.loads(reply.read(65536))
 
@@ -337,7 +346,7 @@ if __name__ == "__main__":
     if ENABLE_LAB_BEACON:
         threading.Thread(target=lab_action_loop, daemon=True).start()
 
-    server = ThreadingHTTPSServer((WEB_BIND, WEB_PORT), Handler, certfile=r"C:\Users\nanik\mypyenv\VaffelOps_Lab\tls-test\cert.pem", keyfile=r"C:\Users\nanik\mypyenv\VaffelOps_Lab\tls-test\key.pem")
+    server = ThreadingHTTPServer((WEB_BIND, WEB_PORT), Handler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

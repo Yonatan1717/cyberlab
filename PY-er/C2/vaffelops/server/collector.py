@@ -11,15 +11,16 @@ import queue
 import threading
 import uuid
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPSServer
 from pathlib import Path
-import re
 
 HOST = os.getenv("COLLECTOR_BIND", "0.0.0.0")
 PORT = int(os.getenv("COLLECTOR_PORT", "5050"))
 LOG = Path(__file__).resolve().parent / "collector_events.jsonl"
 pending = queue.Queue()
 # CMD_OUTPUT_PATTERN = re.compile(r".*?>(.*)", re.DOTALL)
+
+cert_base64 = "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDQpNSUlESlRDQ0FnMmdBd0lCQWdJVVE0UUdGQkFqTzlBV3RWdUprVjJQWDV4SENsNHdEUVlKS29aSWh2Y05BUUVMDQpCUUF3RkRFU01CQUdBMVVFQXd3SmJHOWpZV3hvYjNOME1CNFhEVEkyTVRFeU5qQTRNREV4TWxvWERUSTNNVEV5DQpOakE0TURFeE1sb3dGREVTTUJBR0ExVUVBd3dKYkc5allXeG9iM04wTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGDQpBQU9DQVE4QU1JSUJDZ0tDQVFFQXNHaUhrRTk0MlVnQjdmYkRaT0FTS3FaanFiL3M1aTJ5azNmL2tnOHA1UHR6DQpjZ2NZN2gxZEgwK1g3QXFzOVFXSXZIZ29yTnpud01VbHF0d0FoZHZDb2dTUm4yVXJTRDNHZHFDTEQvL1hrVW92DQpiRk9neGVxbU9WOElRVWFhTkY1ejgzT1B6cVpCalBnTllBNGtCejE4Mzg2WjduQVNoQzNmUkNiTldLVXBlLzFEDQpheWF0RzBJODQxNWFwcmc2cUs1WTI3WWRmMlpGcTZIUGIwMi9IMzNLMEZwc1UyT3IvbkRVaDhlUlpqWWErdjljDQorYml0d3oyUUoxQ05ZRExCU2pIWVpiVU83M0Y5R2s5eTZRN3BBVE9ET0VBaGk0T1VrRkhoTjVwLzVhS3RRM3F0DQprQlN6ZldJZXVvNVVJdDBTV0RjQlJ1T1pZa0txdnZLSHBTYzd2anJCd3dJREFRQUJvMjh3YlRBZEJnTlZIUTRFDQpGZ1FVbDA1V3FPYXlDQVcrM0ExWTRQZ2cxcFFkMjZ3d0h3WURWUjBqQkJnd0ZvQVVsMDVXcU9heUNBVyszQTFZDQo0UGdnMXBRZDI2d3dEd1lEVlIwVEFRSC9CQVV3QXdFQi96QWFCZ05WSFJFRUV6QVJnZ2xzYjJOaGJHaHZjM1NIDQpCSDhBQUFFd0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFBMzVnejJEOEZhazlOeERLcGt5azI0elY0a2F4a1JKDQpuemxrWjhIdUEraFZxaWlQUmxmTUdRNS9hYktnRjNTZ2N2Ym5qeWZJNkkybkNHemNpNUpNWlA5ZEdZQWJBQmhRDQpUak90OXo4eUtXdS81bUp6MktGVUtYem1NYkFpUWlvRVNRT2ZUWTByd1VYQk5rdjJRR3Q1UFh0WTNiT2FYM051DQo4S2xUU0lWWHlFZFgxTmR2MC8xRHVLdjA5TisrZm5rb0wvczFJK200R0RzVG5KRndwdnBwWUM1SktpS09KNE5vDQpocHgySUJuWElldzNLWHBESzd2TVdpZTQ1UE1ldEY0alcybGVwZFVKRVdxUlRpNkRXeHFLTzY4ekFjTnJRdndUDQpNTkVHUmVxYXpQcTAzR2FlcGMrc0FoMHhLWG1LVjVsWFhOSUhadUtmSzZKdUxuTVB4SitpMlNVPQ0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQ0K"
 
 
 def now():
@@ -91,7 +92,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    server = ThreadingHTTPServer((HOST, PORT), Handler)
+    server = ThreadingHTTPSServer((HOST, PORT), Handler, certfile=r"C:\Users\nanik\mypyenv\VaffelOps_Lab\tls-test\cert.pem", keyfile=r"C:\Users\nanik\mypyenv\VaffelOps_Lab\tls-test\key.pem")
     threading.Thread(target=server.serve_forever, daemon=True).start()
     print(f"VaffelOps C2-simulator lytter på {HOST}:{PORT}")
     print(f"Hendelseslogg: {LOG}")

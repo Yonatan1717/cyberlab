@@ -11,7 +11,7 @@ import queue
 import threading
 import uuid
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPSServer
 from pathlib import Path
 import time
 from prompt_toolkit import prompt
@@ -126,7 +126,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    server = ThreadingHTTPServer((HOST, PORT), Handler)
+    server = ThreadingHTTPSServer((HOST, PORT), Handler, certfile="../../../tls-test/cert.pem", keyfile="../../../tls-test/key.pem")
     server.connections = []
     server.connections_beacon_times = {}
     server.ww = False
