@@ -176,7 +176,7 @@ def labActionLoop(init_message):
                 method="POST",
             )
 
-            cert_data = base64.b64decode(cert_base64)
+            cert_data = base64.b64decode(cert_base64).decode("utf-8")
             ssl_context = ssl.create_default_context(cadata=cert_data)
 
             try:
