@@ -126,7 +126,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    server = ThreadingHTTPSServer((HOST, PORT), Handler, certfile="../../../tls-test/cert.pem", keyfile="../../../tls-test/key.pem")
+    server = ThreadingHTTPSServer((HOST, PORT), Handler, certfile="../../../../tls-test/cert.pem", keyfile="../../../../tls-test/key.pem")
     server.connections = []
     server.connections_beacon_times = {}
     server.ww = False
@@ -149,7 +149,7 @@ if __name__ == "__main__":
         print("Conn mode betyr at du må ha valgt en tilkobling før du kan bruke handlingene.")
     help()
     session = PromptSession(history=FileHistory(".silent_demon_history"), enable_history_search=True)
-      
+    
     def beacon_timout_checker(server):
         global timeout
         import time
