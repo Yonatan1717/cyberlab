@@ -15,9 +15,8 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPSServer
 from pathlib import Path
 import time
-from prompt_toolkit import prompt
 from prompt_toolkit.patch_stdout import patch_stdout
-from prompt_toolkit.completion import WordCompleter, NestedCompleter, DynamicCompleter
+from prompt_toolkit.completion import NestedCompleter, DynamicCompleter
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit import PromptSession
 
