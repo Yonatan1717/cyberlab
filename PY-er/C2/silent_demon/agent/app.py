@@ -325,9 +325,9 @@ def checkScheduledTaskExists(task_name = "bg_agent_task"):
 
     return False
 
-def createScheduledTask(task_name = "bg_agent_task"):
+def createScheduledTask(mutex, task_name = "bg_agent_task"):
     import subprocess
-    executable_path = copySelfToKnowPath()
+    executable_path = copySelfToKnowPath(mutex)
     try:
         if checkScheduledTaskExists(task_name):
             return "Scheduled task already exists"
