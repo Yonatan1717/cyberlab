@@ -16,7 +16,14 @@ class TestVideo(VideoStreamTrack):
         super().__init__()
         self.index = 0
         self.started = time.monotonic()
+
+    async def start_capture(self):
         self.cap = cv2.VideoCapture(0)
+        is_opened = self.cap.isOpened()
+        while not is_opened:
+            self.cap = cv2.VideoCapture(0)
+            is_opened = self.cap.isOpened()
+            await asyncio.sleep(1)
 
     async def recv(self):
         pts, time_base = await self.next_timestamp()
@@ -42,6 +49,7 @@ async def main():
             done.set()
 
     try:
+        await track.start_capture()
         pc.addTrack(track)
         await pc.setLocalDescription(await pc.createOffer())
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=15)) as session:
