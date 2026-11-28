@@ -117,7 +117,6 @@ async def main():
                 if now - peers[host_id]['sample_time'] >= 1:
                     peers[host_id]['shown_fps'] = (peers[host_id]['count'] - peers[host_id]['sample_count']) / (now - peers[host_id]['sample_time'])
                     peers[host_id]['sample_time'], peers[host_id]['sample_count'] = now, peers[host_id]['count']
-                    print(f'Received FPS: {peers[host_id]["shown_fps"]:.1f}', flush=True)
                 if peers[host_id]['latest'] is not None:
                     image = peers[host_id]['latest'].copy()
                     cv2.putText(image, f'RX FPS: {peers[host_id]["shown_fps"]:.1f}', (20, 450),

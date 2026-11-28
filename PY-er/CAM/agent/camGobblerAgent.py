@@ -10,7 +10,6 @@ from av import VideoFrame
 
 URL = 'http://172.16.50.168:6060/offer'
 HOST_ID = f'{socket.gethostname()}-{uuid.getnode():012x}'
-print(f'Host ID: {HOST_ID}', flush=True)
 
 class TestVideo(VideoStreamTrack):
     def __init__(self):
@@ -39,7 +38,6 @@ async def main():
 
     @pc.on('connectionstatechange')
     async def state_changed():
-        print('WebRTC:', pc.connectionState, flush=True)
         if pc.connectionState in ('failed', 'closed'):
             done.set()
 
@@ -55,7 +53,6 @@ async def main():
                 response.raise_for_status()
                 answer = await response.json()
         await pc.setRemoteDescription(RTCSessionDescription(**answer))
-        print('Synthetic video test running. Ctrl+C to stop.', flush=True)
         await done.wait()
     finally:
         track.stop()
